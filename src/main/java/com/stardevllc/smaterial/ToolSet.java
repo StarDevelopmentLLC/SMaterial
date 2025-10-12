@@ -1,8 +1,9 @@
 package com.stardevllc.smaterial;
 
-import com.stardevllc.starlib.converter.string.EnumStringConverter;
-import com.stardevllc.starlib.converter.string.StringConverters;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
+@SuppressWarnings("JavaReflectionInvocation")
 public enum ToolSet {
     
     WOOD(SMaterial.WOODEN_SWORD, SMaterial.WOODEN_PICKAXE, SMaterial.WOODEN_AXE, SMaterial.WOODEN_SHOVEL, SMaterial.WOODEN_HOE),
@@ -13,7 +14,16 @@ public enum ToolSet {
     NETHERITE(SMaterial.NETHERITE_SWORD, SMaterial.NETHERITE_PICKAXE, SMaterial.NETHERITE_AXE, SMaterial.NETHERITE_SHOVEL, SMaterial.NETHERITE_HOE);
     
     static {
-        StringConverters.addConverter(ToolSet.class, new EnumStringConverter<>(ToolSet.class));
+        //Reflectively add a string converter to the StringConverters to prevent having to have a dependency
+        try {
+            Class<?> stringConvertersClass = Class.forName("com.stardevllc.starlib.converter.string.StringConverters");
+            Class<?> stringConverterClass = Class.forName("com.stardevllc.starlib.converter.string.StringConverter");
+            Class<?> enumConverterClass = Class.forName("com.stardevllc.starlib.converter.string.EnumStringConverter");
+            Constructor<?> enumConstructor = enumConverterClass.getDeclaredConstructor(Class.class);
+            Object converter = enumConstructor.newInstance(ToolSet.class);
+            Method addConverterMethod = stringConvertersClass.getDeclaredMethod("addConverter", Class.class, stringConverterClass);
+            addConverterMethod.invoke(null, ToolSet.class, converter);
+        } catch (Exception e) {}
     }
     
     private final SMaterial sword, pickaxe, axe, shovel, hoe;

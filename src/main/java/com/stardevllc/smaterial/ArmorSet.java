@@ -1,8 +1,9 @@
 package com.stardevllc.smaterial;
 
-import com.stardevllc.starlib.converter.string.EnumStringConverter;
-import com.stardevllc.starlib.converter.string.StringConverters;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
+@SuppressWarnings("JavaReflectionInvocation")
 public enum ArmorSet {
 
     NONE(SMaterial.AIR, SMaterial.AIR, SMaterial.AIR, SMaterial.AIR),
@@ -14,7 +15,16 @@ public enum ArmorSet {
     NETHERITE(SMaterial.NETHERITE_HELMET, SMaterial.NETHERITE_CHESTPLATE, SMaterial.NETHERITE_LEGGINGS, SMaterial.NETHERITE_BOOTS);
     
     static {
-        StringConverters.addConverter(ArmorSet.class, new EnumStringConverter<>(ArmorSet.class));
+        //Reflectively add a string converter to the StringConverters to prevent having to have a dependency
+        try {
+            Class<?> stringConvertersClass = Class.forName("com.stardevllc.starlib.converter.string.StringConverters");
+            Class<?> stringConverterClass = Class.forName("com.stardevllc.starlib.converter.string.StringConverter");
+            Class<?> enumConverterClass = Class.forName("com.stardevllc.starlib.converter.string.EnumStringConverter");
+            Constructor<?> enumConstructor = enumConverterClass.getDeclaredConstructor(Class.class);
+            Object converter = enumConstructor.newInstance(ArmorSet.class);
+            Method addConverterMethod = stringConvertersClass.getDeclaredMethod("addConverter", Class.class, stringConverterClass);
+            addConverterMethod.invoke(null, ArmorSet.class, converter);
+        } catch (Exception e) {}
     }
 
     private final SMaterial helmet, chestplate, leggings, boots;

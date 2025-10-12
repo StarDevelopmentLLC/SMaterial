@@ -1,19 +1,18 @@
 package com.stardevllc.smaterial;
 
-import com.stardevllc.starlib.converter.string.EnumStringConverter;
-import com.stardevllc.starlib.converter.string.StringConverters;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@SuppressWarnings({"UnstableApiUsage", "ConstantExpression"})
+@SuppressWarnings({"UnstableApiUsage", "ConstantExpression", "JavaReflectionInvocation"})
 public enum SMaterial {
     ACACIA_BOAT("BOAT_ACACIA"),
     ACACIA_BUTTON("WOOD_BUTTON"),
@@ -1634,10 +1633,6 @@ public enum SMaterial {
     ZOMBIE_WALL_HEAD(2, "SKULL", "SKULL_ITEM"),
     ZOMBIFIED_PIGLIN_SPAWN_EGG(57, "MONSTER_EGG", "ZOMBIE_PIGMAN_SPAWN_EGG");
     
-    static {
-        StringConverters.addConverter(SMaterial.class, new EnumStringConverter<>(SMaterial.class));
-    }
-    
     public static final SMaterial[] VALUES = values();
     
     private static final Map<String, SMaterial> NAMES = new HashMap<>();
@@ -1657,9 +1652,7 @@ public enum SMaterial {
         for (SMaterial material : VALUES) {
             NAMES.put(material.name(), material);
         }
-    }
-
-    static {
+        
         if (Data.ISFLAT) {
             // It's not needed at all if it's the newer version. We can save some memory.
             DUPLICATED = null;
@@ -1672,8 +1665,19 @@ public enum SMaterial {
             DUPLICATED.add(BRICK.name());
             DUPLICATED.add(NETHER_BRICK.name());
         }
+        
+        //Reflectively add a string converter to the StringConverters to prevent having to have a dependency
+        try {
+            Class<?> stringConvertersClass = Class.forName("com.stardevllc.starlib.converter.string.StringConverters");
+            Class<?> stringConverterClass = Class.forName("com.stardevllc.starlib.converter.string.StringConverter");
+            Class<?> enumConverterClass = Class.forName("com.stardevllc.starlib.converter.string.EnumStringConverter");
+            Constructor<?> enumConstructor = enumConverterClass.getDeclaredConstructor(Class.class);
+            Object converter = enumConstructor.newInstance(SMaterial.class);
+            Method addConverterMethod = stringConvertersClass.getDeclaredMethod("addConverter", Class.class, stringConverterClass);
+            addConverterMethod.invoke(null, SMaterial.class, converter);
+        } catch (Exception e) {}
     }
-    
+
     private final byte data;
 
     private final String[] legacy;
